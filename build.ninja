@@ -1,5 +1,5 @@
 cc = clang
-cflags = -Iinclude -Wall -Wextra --std=c11
+cflags = -Iinclude -g -Wall -Wextra -Wno-missing-field-initializers --std=c11
 
 rule cc
   command = $cc $cflags -c $in -o $out
@@ -12,4 +12,4 @@ rule ld
 build build/http.o: cc src/http.c
 
 build build/libtest.o: cc test/libtest.c
-build build/libtext: ld build/libtest.o build/http.o
+build build/libtest: ld build/libtest.o build/http.o
