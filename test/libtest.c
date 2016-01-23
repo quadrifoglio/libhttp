@@ -4,7 +4,7 @@
 #include <string.h>
 
 void test_request(void) {
-	static char* data =	"GET /test HTTP/1.1\r\n"
+	static char* data = "GET /test HTTP/1.1\r\n"
 						"Connection: keep-alive\r\n"
 						"Accept: text/plain\r\n\r\n"
 						"Hello world";

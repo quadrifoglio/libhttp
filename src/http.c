@@ -44,6 +44,10 @@ size_t http_request_parse(char* buf, size_t len, http_request_t* target) {
 	}
 
 	tok = strtok(0, "\n");
+	if(!tok) {
+		goto cleanup;
+	}
+
 	int i = 0;
 	while(tok) {
 		if(*tok == '\r') { // Headers parsed, begining of body
