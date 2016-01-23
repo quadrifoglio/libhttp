@@ -1,0 +1,6 @@
+build/
+
+.ninja*
+*.o
+*.swp
+*.swo
