@@ -8,9 +8,9 @@ Work in progress !
 
 Just copy include/libhttp.h and src/http.c into your project.
 
-#Usage
+## Usage
 
-```
+```c
 char* data = "GET / HTTP/1.1\r\n"; // Your HTTP request
 http_request_t req = {0};
 
