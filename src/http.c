@@ -85,7 +85,72 @@ cleanup:
 }
 
 size_t http_response_parse(char* buf, size_t len, http_response_t* target) {
-	return 0;
+	size_t n = 0;
+
+	char* str = calloc(1, len + 1);
+	memcpy(str, buf, len);
+
+	char* tok = strtok(str, "\n");
+	char* s = 0;
+	if(strlen(tok) > 8 && (s = strstr(tok, "HTTP/")) != 0 && s == tok) {
+		target->protoMajor = tok[5] - '0';
+		target->protoMinor = tok[7] - '0';
+
+		n += 8;
+	}
+	else {
+		goto cleanup;
+	}
+
+	if((s = strstr(s + 8, " ")) != 0) {
+		target->status = calloc(1, strlen(s + 1));
+		memcpy(target->status, s + 1, strlen(s + 1) - 1);
+
+		n += strlen(s) + 1;
+	}
+	else {
+		goto cleanup;
+	}
+
+	tok = strtok(0, "\n");
+	if(!tok) { // No headers or body
+		goto cleanup;
+	}
+
+	target->headers.base = 0;
+	target->headers.count = 0;
+
+	int hi = 0;
+	while(tok) {
+		if(*tok == '\r') { // Headers parsed, begining of body
+			break;
+		}
+
+		char* s = 0;
+		if((s = strstr(tok, ": ")) != 0) {
+			char* hn = calloc(1, s - tok);
+			memcpy(hn, tok, s - tok);
+
+			char* hv = calloc(1, s - tok);
+			memcpy(hv, s + 2, tok + (strlen(tok)-1) - (s + 2));
+
+			target->headers.base = realloc(target->headers.base, (++target->headers.count) * 2 * sizeof(char*));
+			target->headers.base[hi++] = hn;
+			target->headers.base[hi++] = hv;
+		}
+
+		n += strlen(tok) + 1;
+		tok = strtok(0, "\n");
+	}
+
+	target->bodylen = len - (n + 2);
+	target->body = calloc(1, target->bodylen + 1);
+	memcpy(target->body, buf + n + 2, target->bodylen);
+	n += target->bodylen + 2;
+
+cleanup:
+	free(str);
+	return n;
 }
 
 char* http_get_header_name(http_headers_t h, int index) {
