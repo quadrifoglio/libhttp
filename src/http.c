@@ -44,11 +44,14 @@ size_t http_request_parse(char* buf, size_t len, http_request_t* target) {
 	}
 
 	tok = strtok(0, "\n");
-	if(!tok) {
+	if(!tok) { // No headers or body
 		goto cleanup;
 	}
 
-	int i = 0;
+	target->headers.base = 0;
+	target->headers.count = 0;
+
+	int hi = 0;
 	while(tok) {
 		if(*tok == '\r') { // Headers parsed, begining of body
 			break;
@@ -62,19 +65,17 @@ size_t http_request_parse(char* buf, size_t len, http_request_t* target) {
 			char* hv = calloc(1, s - tok);
 			memcpy(hv, s + 2, tok + (strlen(tok)-1) - (s + 2));
 
-			// TODO: Store the headers
-
-			free(hn);
-			free(hv);
+			target->headers.base = realloc(target->headers.base, (++target->headers.count) * 2 * sizeof(char*));
+			target->headers.base[hi++] = hn;
+			target->headers.base[hi++] = hv;
 		}
 
 		n += strlen(tok) + 1;
 		tok = strtok(0, "\n");
-		i++;
 	}
 
 	target->bodylen = len - (n + 2);
-	target->body = malloc(target->bodylen);
+	target->body = calloc(1, target->bodylen + 1);
 	memcpy(target->body, buf + n + 2, target->bodylen);
 	n += target->bodylen + 2;
 
@@ -87,12 +88,27 @@ size_t http_response_parse(char* buf, size_t len, http_response_t* target) {
 	return 0;
 }
 
+char* http_get_header_name(http_headers_t h, int index) {
+	return h.base[2 * index];
+}
+
+char* http_get_header_value(http_headers_t h, int index) {
+	return h.base[2 * index + 1];
+}
+
 void http_request_dispose(http_request_t* req) {
 	if(req->method) {
 		free(req->method);
 	}
 	if(req->url) {
 		free(req->url);
+	}
+	if(req->headers.base) {
+		for(int i = 0; i < (int)req->headers.count * 2; ++i) {
+			free(req->headers.base[i]);
+		}
+
+		free(req->headers.base);
 	}
 	if(req->body) {
 		free(req->body);
