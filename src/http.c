@@ -184,6 +184,13 @@ void http_response_dispose(http_response_t* res) {
 	if(res->status) {
 		free(res->status);
 	}
+	if(res->headers.base) {
+		for(int i = 0; i < (int)res->headers.count * 2; ++i) {
+			free(res->headers.base[i]);
+		}
+
+		free(res->headers.base);
+	}
 	if(res->body) {
 		free(res->body);
 	}
