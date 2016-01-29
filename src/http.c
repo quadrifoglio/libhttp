@@ -81,7 +81,7 @@ size_t http_request_parse_head(char* line, http_request_t* target) {
 		return n;
 	}
 
-	if((s = strstr(s, "HTTP/")) != 0 && strlen(s) == 8 + 1) {
+	if((s = strstr(s, "HTTP/")) != 0 && strlen(s) >= 8) {
 		target->protoMajor = s[5] - '0';
 		target->protoMinor = s[7] - '0';
 
@@ -91,12 +91,9 @@ size_t http_request_parse_head(char* line, http_request_t* target) {
 		return n;
 	}
 
-	if(n != l) {
-		if(l - n == 1 && (line[n] == '\r' || line[n] == '\n')) {
+	while(n != l) {
+		if(line[n] == '\r' || line[n] == '\n') {
 			n++;
-		}
-		else if(l - n == 2 && (line[n] == '\n' || line[n] == '\r') && (line[n+1] == '\n' || line[n+1] == '\r')) {
-			n += 2;
 		}
 		else {
 			return n;
@@ -170,8 +167,14 @@ size_t http_response_parse_head(char* line, http_response_t* target) {
 	}
 
 	if((s = strstr(s + 8, " ")) != 0) {
-		target->status = calloc(1, strlen(s + 1));
-		memcpy(target->status, s + 1, strlen(s + 1) - 1);
+		char* end;
+		if((end = strstr(s, "\r")) == 0) {
+			end = line + l;
+			n++;
+		}
+
+		target->status = calloc(1, end - (s + 1));
+		memcpy(target->status, s + 1, end - (s + 1));
 
 		n += strlen(s);
 	}
@@ -179,12 +182,9 @@ size_t http_response_parse_head(char* line, http_response_t* target) {
 		return n;
 	}
 
-	if(n != l) {
-		if(l - n == 1 && (line[n] == '\r' || line[n] == '\n')) {
+	while(n != l) {
+		if(line[n] == '\r' || line[n] == '\n') {
 			n++;
-		}
-		else if(l - n == 2 && (line[n] == '\n' || line[n] == '\r') && (line[n+1] == '\n' || line[n+1] == '\r')) {
-			n += 2;
 		}
 		else {
 			return n;
@@ -203,8 +203,16 @@ size_t http_parse_header(char* line, http_header_t* hh) {
 		hh->name = calloc(1, s - line);
 		memcpy(hh->name, line, s - line);
 
-		hh->value = calloc(1, s - line);
-		memcpy(hh->value, s + 2, line + (strlen(line)-1) - (s + 2));
+		char* end;
+		if((end = strstr(s, "\r")) == 0) {
+			end = line + l;
+		}
+		else {
+			n++;
+		}
+
+		hh->value = calloc(1, end - (s + 2));
+		memcpy(hh->value, s + 2, end - (s + 2));
 
 		n += strlen(hh->name) + strlen(hh->value) + 2;
 	}
@@ -212,12 +220,9 @@ size_t http_parse_header(char* line, http_header_t* hh) {
 		return n;
 	}
 
-	if(n != l) {
-		if(l - n == 1 && (line[n] == '\r' || line[n] == '\n')) {
+	while(n != l) {
+		if(line[n] == '\r' || line[n] == '\n') {
 			n++;
-		}
-		else if(l - n == 2 && (line[n] == '\n' || line[n] == '\r') && (line[n+1] == '\n' || line[n+1] == '\r')) {
-			n += 2;
 		}
 		else {
 			return n;
