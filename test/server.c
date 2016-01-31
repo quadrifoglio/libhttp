@@ -13,6 +13,9 @@ coroutine void client(tcpsock s) {
 	if(n == 0 || n == 1024) { // Don't handle large requests
 		goto cleanup;
 	}
+	if(errno == ECONNRESET) {
+		goto cleanup;
+	}
 
 	http_request_t req = {0};
 	size_t np = http_request_parse(buf, n, &req);
@@ -32,7 +35,16 @@ coroutine void client(tcpsock s) {
 
 	char* resp = "HTTP/1.1 200 OK\r\nContent-Length: 11\r\n\r\nHello world";
 	tcpsend(s, resp, strlen(resp), -1);
+	if(errno == ECONNRESET) {
+		goto cleanup;
+	}
+
 	tcpflush(s, -1);
+	if(errno == ECONNRESET) {
+		goto cleanup;
+	}
+
+	http_request_dispose(&req);
 
 cleanup:
 	tcpclose(s);
