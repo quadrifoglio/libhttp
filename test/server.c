@@ -8,18 +8,32 @@
 #include "libhttp.h"
 
 coroutine void client(tcpsock s) {
-	char buf[1024];
-	size_t n = tcprecv(s, buf, sizeof(buf), now() + 1);
-	if(n == 0 || n == 1024) { // Don't handle large requests
-		goto cleanup;
-	}
-	if(errno == ECONNRESET) {
-		goto cleanup;
-	}
+	char* data = malloc(1);
+	size_t len = 1;
+	size_t cur = 0;
+	i64 dl = now() + 2000;
+
+	do {
+		u8 buf[256];
+		size_t received = tcprecvuntil(s, buf, 256, "\r", 1, dl);
+		if(received == 0) {
+			break;
+		}
+		if(errno == ECONNRESET) {
+			goto cleanup;
+		}
+
+		data = realloc(data, len + received);
+		memcpy(data + cur, buf, received);
+
+		cur += received;
+		len += received;
+		dl = now() + 1;
+	} while(1);
 
 	http_request_t req = {0};
-	size_t np = http_request_parse(buf, n, &req);
-	if(np != n) {
+	size_t np = http_request_parse(data, len, &req);
+	if(np != len) {
 		printf("Parsing failed\n");
 		http_request_dispose(&req);
 		goto cleanup;
@@ -68,7 +82,7 @@ int main(int argc, char** argv) {
 		pid_t pid = mfork();
 
 		if(pid < 0) {
-			printf("Can't fork !");
+			puts("Can't fork !");
 			return 1;
 		}
 
