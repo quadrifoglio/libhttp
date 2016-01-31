@@ -200,7 +200,7 @@ size_t http_parse_header(char* line, http_header_t* hh) {
 
 	char* s = 0;
 	if((s = strstr(line, ": ")) != 0) {
-		hh->name = calloc(1, s - line);
+		hh->name = calloc(1, (s - line) + 1);
 		memcpy(hh->name, line, s - line);
 
 		char* end;
@@ -211,7 +211,7 @@ size_t http_parse_header(char* line, http_header_t* hh) {
 			n++;
 		}
 
-		hh->value = calloc(1, end - (s + 2));
+		hh->value = calloc(1, (end - (s + 2)) + 1);
 		memcpy(hh->value, s + 2, end - (s + 2));
 
 		n += strlen(hh->name) + strlen(hh->value) + 2;
@@ -220,8 +220,10 @@ size_t http_parse_header(char* line, http_header_t* hh) {
 		return n;
 	}
 
+	int i = 0;
 	while(n != l) {
 		if(line[n] == '\r' || line[n] == '\n') {
+			i++;
 			n++;
 		}
 		else {
@@ -229,7 +231,19 @@ size_t http_parse_header(char* line, http_header_t* hh) {
 		}
 	}
 
+	if(i >= 4) {
+		hh->last = true;
+	}
+	else {
+		hh->last = false;
+	}
+
 	return n;
+}
+
+void http_header_dispose(http_header_t* h) {
+	free(h->name);
+	free(h->value);
 }
 
 void http_request_dispose(http_request_t* req) {
@@ -241,8 +255,7 @@ void http_request_dispose(http_request_t* req) {
 	}
 	if(req->headers) {
 		for(int i = 0; i < (int)req->headerCount; ++i) {
-			free(req->headers[i].name);
-			free(req->headers[i].value);
+			http_header_dispose(&req->headers[i]);
 		}
 
 		free(req->headers);
@@ -258,8 +271,7 @@ void http_response_dispose(http_response_t* res) {
 	}
 	if(res->headers) {
 		for(int i = 0; i < (int)res->headerCount; ++i) {
-			free(res->headers[i].name);
-			free(res->headers[i].value);
+			http_header_dispose(&res->headers[i]);
 		}
 
 		free(res->headers);

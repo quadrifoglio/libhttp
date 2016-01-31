@@ -3,6 +3,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#define false 0
+#define true 1
+
+typedef uint8_t bool;
+
 typedef uint8_t u8;
 typedef uint16_t u16;
 typedef uint32_t u32;
@@ -16,6 +21,7 @@ typedef int64_t i64;
 typedef struct {
 	char* name;
 	char* value;
+	bool last;
 } http_header_t;
 
 typedef struct {
@@ -54,3 +60,4 @@ size_t http_response_parse_head(char* line, http_response_t* target);
 void http_response_dispose(http_response_t* req);
 
 size_t http_parse_header(char* line, http_header_t* hh);
+void http_header_dispose(http_header_t* h);
