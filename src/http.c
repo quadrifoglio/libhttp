@@ -182,7 +182,7 @@ coroutine void client(http_server_t serv, tcpsock s) {
 	}
 }
 
-bool http_bind(http_server_t serv, char* addrs, int port, int backlog) {
+bool http_listen(http_server_t serv, char* addrs, int port, int backlog) {
 	ipaddr addr = iplocal(addrs, port, 0);
 	if(errno != 0) {
 		return false;

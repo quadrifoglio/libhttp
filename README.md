@@ -1,8 +1,12 @@
 # libhttp
 
-Basic HTTP parsing for C
+Basic HTTP server library for the C programming language
 
 Work in progress !
+
+## Dependencies
+
+This project relies on [libmill](https://github.com/sustrik/libmill) to provide concurrency functionality
 
 ## Installation
 
@@ -11,15 +15,22 @@ Just copy include/libhttp.h and src/http.c into your project.
 ## Usage
 
 ```c
-char* data = "GET / HTTP/1.1\r\n"; // Your HTTP request
-http_request_t req = {0};
+void onRequest(http_request_t* request) {
+	printf("HTTP/%d.%d %s request to %s\n", request->vmaj, request->vmin, request->method, request->uri);
 
-size_t n = http_request_parse(data, strlen(data), &req);
-if(n != strlen(data)) {
-	// Parsing error, bad request
+	for(size_t i = 0; i < request->headers.count; ++i) {
+		printf("Header %s: %s\n", request->headers.names[i], request->headers.values[i]);
+	}
 }
 
-printf("%s request on %s\n", req.method, req.url); // GET request on /
-http_request_dispose(&req);
+int main(int argc, char** argv) {
+	http_server_t server;
+	server.onRequest = &onRequest;
 
+	if(!http_listen(server, "127.0.0.1", 8000, 1)) {
+		perror("Can not start HTTP server: ");
+	}
+
+	return 0;
+}
 ```

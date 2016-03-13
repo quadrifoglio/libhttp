@@ -51,7 +51,7 @@ void http_request_dispose(http_request_t* req);
 bool http_header_parse(char* line, char** name, char** value);
 void http_header_add(http_headers_t* hh, char* name, char* value);
 
-bool http_bind(http_server_t, char* addr, int port, int backlog);
+bool http_listen(http_server_t, char* addr, int port, int backlog);
 
 // UTILS
 
