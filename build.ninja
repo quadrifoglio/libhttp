@@ -1,15 +1,11 @@
-cc = clang
-cflags = -Iinclude -g -Wall -Wextra -Wno-missing-field-initializers --std=c11
+cc = gcc
+cflags = -Iinclude -g -Wall -Wextra -Wno-missing-field-initializers
 
 rule cc
   command = $cc $cflags -c $in -o $out
   description = CC $in
 
 rule ld
-  command = $cc $in -o $out
-  description = LD $in
-
-rule ldserv
   command = $cc $in -o $out -lmill
   description = LD $in
 
@@ -19,4 +15,4 @@ build build/libtest.o: cc test/libtest.c
 build build/libtest: ld build/libtest.o build/http.o
 
 build build/server.o: cc test/server.c
-build build/server: ldserv build/server.o build/http.o
+build build/server: ld build/server.o build/http.o

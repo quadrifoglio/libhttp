@@ -2,11 +2,12 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <libmill.h>
 
 #define false 0
 #define true 1
 
-typedef uint8_t bool;
+#define HTTP_MAX_LINE_LENGTH 8000
 
 typedef uint8_t u8;
 typedef uint16_t u16;
@@ -18,46 +19,41 @@ typedef int16_t i16;
 typedef int32_t i32;
 typedef int64_t i64;
 
-typedef struct {
-	char* name;
-	char* value;
-	bool last;
-} http_header_t;
+typedef _Bool bool;
+
+// HTTP API
 
 typedef struct {
-	u8 protoMajor;
-	u8 protoMinor;
+	size_t count;
+
+	char** names;
+	char** values;
+} http_headers_t;
+
+typedef struct {
+	int vmaj, vmin;
 
 	char* method;
-	char* url;
+	char* uri;
 
-	http_header_t* headers;
-	size_t headerCount;
-
-	u8* body;
-	size_t bodylen;
+	http_headers_t headers;
 } http_request_t;
 
+typedef void(*http_request_cb)(http_request_t*);
+
 typedef struct {
-	u8 protoMajor;
-	u8 protoMinor;
+	http_request_cb onRequest;
+} http_server_t;
 
-	char* status;
-
-	http_header_t* headers;
-	size_t headerCount;
-
-	u8* body;
-	size_t bodylen;
-} http_response_t;
-
-size_t http_request_parse(char* buf, size_t len, http_request_t* target);
-size_t http_request_parse_head(char* line, http_request_t* target);
+bool http_request_parse(http_request_t* req, char* line);
 void http_request_dispose(http_request_t* req);
 
-size_t http_response_parse(char* buf, size_t len, http_response_t* target);
-size_t http_response_parse_head(char* line, http_response_t* target);
-void http_response_dispose(http_response_t* req);
+bool http_header_parse(char* line, char** name, char** value);
+void http_header_add(http_headers_t* hh, char* name, char* value);
 
-size_t http_parse_header(char* line, http_header_t* hh);
-void http_header_dispose(http_header_t* h);
+bool http_bind(http_server_t, char* addr, int port, int backlog);
+
+// UTILS
+
+ssize_t httpu_strlen_delim(char* src, size_t len, char* delims, size_t delimc);
+size_t httpu_substr_delim(char** dst, char* src, size_t len, char* delims, size_t delimc);
