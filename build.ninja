@@ -1,5 +1,6 @@
 cc = gcc
-cflags = -Iinclude -g -Wall -Wextra -Wno-missing-field-initializers
+cflags = -Iinclude -std=gnu99 -g $
+    -W -Wall -Wextra -Wno-missing-field-initializers
 
 rule cc
   command = $cc $cflags -c $in -o $out
