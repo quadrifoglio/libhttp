@@ -39,7 +39,17 @@ typedef struct {
 	http_headers_t headers;
 } http_request_t;
 
-typedef void(*http_request_cb)(http_request_t*);
+typedef struct {
+	int vmaj, vmin;
+
+	int status;
+	http_headers_t headers;
+
+	u8* body;
+	size_t bodylen;
+} http_response_t;
+
+typedef void(*http_request_cb)(http_request_t*, http_response_t*);
 
 typedef struct {
 	http_request_cb onRequest;
@@ -47,6 +57,10 @@ typedef struct {
 
 bool http_request_parse(http_request_t* req, char* line);
 void http_request_dispose(http_request_t* req);
+
+void http_response_init(http_response_t* res, int status);
+void http_response_format(http_response_t* res, char** buf);
+void http_response_dispose(http_response_t* res);
 
 bool http_header_parse(char* line, char** name, char** value);
 void http_header_add(http_headers_t* hh, char* name, char* value);
@@ -57,3 +71,4 @@ bool http_listen(http_server_t, char* addr, int port, int backlog);
 
 ssize_t httpu_strlen_delim(char* src, size_t len, char* delims, size_t delimc);
 size_t httpu_substr_delim(char** dst, char* src, size_t len, char* delims, size_t delimc);
+char* httpu_status_str(int status);
