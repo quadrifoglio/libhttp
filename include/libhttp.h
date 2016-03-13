@@ -55,17 +55,17 @@ typedef struct {
 	http_request_cb onRequest;
 } http_server_t;
 
-bool http_request_parse(http_request_t* req, char* line);
+bool http_request_parse(http_request_t* req, const char* line);
 void http_request_dispose(http_request_t* req);
 
 void http_response_init(http_response_t* res, int status);
 void http_response_format(http_response_t* res, char** buf);
 void http_response_dispose(http_response_t* res);
 
-bool http_header_parse(char* line, char** name, char** value);
+bool http_header_parse(const char* line, char** name, char** value);
 void http_header_add(http_headers_t* hh, char* name, char* value);
 
-bool http_listen(http_server_t, char* addr, int port, int backlog);
+bool http_listen(http_server_t, const char* addr, int port, int backlog);
 
 // UTILS
 

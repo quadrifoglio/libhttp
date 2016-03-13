@@ -26,7 +26,7 @@ bool http_get_line(tcpsock s, char** line) {
 	return true;
 }
 
-bool http_request_parse(http_request_t* req, char* line) {
+bool http_request_parse(http_request_t* req, const char* line) {
 	bool res = false;
 
 	char* method = 0;
@@ -52,8 +52,8 @@ bool http_request_parse(http_request_t* req, char* line) {
 	}
 
 	res = true;
-	req->vmaj = (*(line + 5)) - '0';
-	req->vmin = (*(line + 7)) - '0';
+	req->vmaj = line[5] - '0';
+	req->vmin = line[7] - '0';
 	req->method = strdup(method);
 	req->uri = strdup(uri);
 
@@ -182,7 +182,7 @@ void http_response_dispose(http_response_t* res) {
 	}
 }
 
-bool http_header_parse(char* line, char** name, char** value) {
+bool http_header_parse(const char* line, char** name, char** value) {
 	ssize_t n = httpu_strlen_delim(line, strlen(line), ":", 1);
 	if(n <= 0) {
 		return false;
@@ -283,7 +283,7 @@ coroutine void client(http_server_t serv, tcpsock s) {
 	}
 }
 
-bool http_listen(http_server_t serv, char* addrs, int port, int backlog) {
+bool http_listen(http_server_t serv, const char* addrs, int port, int backlog) {
 	ipaddr addr = iplocal(addrs, port, 0);
 	if(errno != 0) {
 		return false;
