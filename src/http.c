@@ -308,7 +308,7 @@ bool http_listen(http_server_t serv, char* addrs, int port, int backlog) {
 
 // UTILS
 
-ssize_t httpu_strlen_delim(char* src, size_t len, char* delims, size_t delimc) {
+ssize_t httpu_strlen_delim(const char* src, size_t len, const char* delims, size_t delimc) {
 	ssize_t i = 0;
 	while(i < (ssize_t)len) {
 		for(size_t j = 0; j < delimc; ++j) {
@@ -328,7 +328,7 @@ endloop:
 	return i;
 }
 
-size_t httpu_substr_delim(char** dst, char* src, size_t len, char* delims, size_t delimc) {
+size_t httpu_substr_delim(char** dst, const char* src, size_t len, const char* delims, size_t delimc) {
 	// TODO: Don't allocate that much memory
 	*dst = malloc(len);
 	if(!(*dst)) {
@@ -336,18 +336,16 @@ size_t httpu_substr_delim(char** dst, char* src, size_t len, char* delims, size_
 		return 0;
 	}
 
-	char* c = src;
-
 	size_t i = 0;
 	while(i < len) {
 		for(size_t j = 0; j < delimc; ++j) {
-			if(*c == delims[j]) {
+			if(*src == delims[j]) {
 				goto endloop;
 			}
 		}
 
-		*(*dst + i) = *c;
-		++c;
+		*(*dst + i) = *src;
+		++src;
 		++i;
 	}
 
@@ -359,218 +357,145 @@ endloop:
 	return i;
 }
 
-char* httpu_status_str(int status) {
-	char* str;
-
+const char* httpu_status_str(int status) {
 	switch(status) {
 		case 100:
-			str = "Continue";
-			break;
+			return "Continue";
 		case 101:
-			str = "Switching Protocols";
-			break;
+			return "Switching Protocols";
 		case 102:
-			str = "Processing";
-			break;
+			return "Processing";
 		case 200:
-			str = "OK";
-			break;
+			return "OK";
 		case 201:
-			str = "Created";
-			break;
+			return "Created";
 		case 202:
-			str = "Accepted";
-			break;
+			return "Accepted";
 		case 203:
-			str = "Non-Authoritative Information";
-			break;
+			return "Non-Authoritative Information";
 		case 204:
-			str = "No Content";
-			break;
+			return "No Content";
 		case 205:
-			str = "Reset Content";
-			break;
+			return "Reset Content";
 		case 206:
-			str = "Partial Content";
-			break;
+			return "Partial Content";
 		case 207:
-			str = "Multi-Status";
-			break;
+			return "Multi-Status";
 		case 210:
-			str = "Content Different";
-			break;
+			return "Content Different";
 		case 226:
-			str = "IM Used";
-			break;
+			return "IM Used";
 		case 300:
-			str = "Multiple Choices";
-			break;
+			return "Multiple Choices";
 		case 301:
-			str = "Moved Permanently";
-			break;
+			return "Moved Permanently";
 		case 302:
-			str = "Moved Temporarily";
-			break;
+			return "Moved Temporarily";
 		case 303:
-			str = "See Other";
-			break;
+			return "See Other";
 		case 304:
-			str = "Not Modified";
-			break;
+			return "Not Modified";
 		case 305:
-			str = "Use Proxy";
-			break;
+			return "Use Proxy";
 		case 306:
-			str = "Reserved";
-			break;
+			return "Reserved";
 		case 307:
-			str = "Temporary Redirect";
-			break;
+			return "Temporary Redirect";
 		case 308:
-			str = "Permanent Redirect";
-			break;
+			return "Permanent Redirect";
 		case 310:
-			str = "Too many Redirects";
-			break;
+			return "Too many Redirects";
 		case 400:
-			str = "Bad Request";
-			break;
+			return "Bad Request";
 		case 401:
-			str = "Unauthorized";
-			break;
+			return "Unauthorized";
 		case 402:
-			str = "Payment Required";
-			break;
+			return "Payment Required";
 		case 403:
-			str = "Forbidden";
-			break;
+			return "Forbidden";
 		case 404:
-			str = "Not Found";
-			break;
+			return "Not Found";
 		case 405:
-			str = "Method Not Allowed";
-			break;
+			return "Method Not Allowed";
 		case 406:
-			str = "Not Acceptable";
-			break;
+			return "Not Acceptable";
 		case 407:
-			str = "Proxy Authentication Required";
-			break;
+			return "Proxy Authentication Required";
 		case 408:
-			str = "Request Time-out";
-			break;
+			return "Request Time-out";
 		case 409:
-			str = "Conflict";
-			break;
+			return "Conflict";
 		case 410:
-			str = "Gone";
-			break;
+			return "Gone";
 		case 411:
-			str = "Length Required";
-			break;
+			return "Length Required";
 		case 412:
-			str = "Precondition Failed";
-			break;
+			return "Precondition Failed";
 		case 413:
-			str = "Request Entity Too Large";
-			break;
+			return "Request Entity Too Large";
 		case 414:
-			str = "Request-URI Too Long";
-			break;
+			return "Request-URI Too Long";
 		case 415:
-			str = "Unsupported Media Type";
-			break;
+			return "Unsupported Media Type";
 		case 416:
-			str = "Requested range unsatisfiable";
-			break;
+			return "Requested range unsatisfiable";
 		case 417:
-			str = "Expectation failed";
-			break;
+			return "Expectation failed";
 		case 418:
-			str = "I’m a teapot";
-			break;
+			return "I’m a teapot";
 		case 421:
-			str = "Bad mapping";
-			break;
+			return "Bad mapping";
 		case 422:
-			str = "Unprocessable entity";
-			break;
+			return "Unprocessable entity";
 		case 423:
-			str = "Locked";
-			break;
+			return "Locked";
 		case 424:
-			str = "Method failure";
-			break;
+			return "Method failure";
 		case 425:
-			str = "Unordered Collection";
-			break;
+			return "Unordered Collection";
 		case 426:
-			str = "Upgrade Required";
-			break;
+			return "Upgrade Required";
 		case 428:
-			str = "Precondition Required";
-			break;
+			return "Precondition Required";
 		case 429:
-			str = "Too Many Requests";
-			break;
+			return "Too Many Requests";
 		case 431:
-			str = "Request Header Fields Too Large";
-			break;
+			return "Request Header Fields Too Large";
 		case 449:
-			str = "Retry With";
-			break;
+			return "Retry With";
 		case 450:
-			str = "Blocked by Windows Parental Controls";
-			break;
+			return "Blocked by Windows Parental Controls";
 		case 451:
-			str = "Unavailable For Legal Reasons";
-			break;
+			return "Unavailable For Legal Reasons";
 		case 456:
-			str = "Unrecoverable Error";
-			break;
+			return "Unrecoverable Error";
 		case 500:
-			str = "Internal Server Error";
-			break;
+			return "Internal Server Error";
 		case 501:
-			str = "Not Implemented";
-			break;
+			return "Not Implemented";
 		case 502:
-			str = "Bad Gateway";
-			break;
+			return "Bad Gateway";
 		case 503:
-			str = "Service Unavailable";
-			break;
+			return "Service Unavailable";
 		case 504:
-			str = "Gateway Time-out";
-			break;
+			return "Gateway Time-out";
 		case 505:
-			str = "HTTP Version not supported";
-			break;
+			return "HTTP Version not supported";
 		case 506:
-			str = "Variant also negociate";
-			break;
+			return "Variant also negociate";
 		case 507:
-			str = "Insufficient storage";
-			break;
+			return "Insufficient storage";
 		case 508:
-			str = "Loop detected";
-			break;
+			return "Loop detected";
 		case 509:
-			str = "Bandwidth Limit Exceeded";
-			break;
+			return "Bandwidth Limit Exceeded";
 		case 510:
-			str = "Not extended";
-			break;
+			return "Not extended";
 		case 511:
-			str = "Network authentication required";
-			break;
+			return "Network authentication required";
 		case 520:
-			str = "Web server is returning an unknown error";
-			break;
+			return "Web server is returning an unknown error";
 		default:
-			str = "";
-			break;
+			return "";
 	}
-
-	return str;
 }

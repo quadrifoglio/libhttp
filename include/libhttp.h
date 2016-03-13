@@ -69,6 +69,6 @@ bool http_listen(http_server_t, char* addr, int port, int backlog);
 
 // UTILS
 
-ssize_t httpu_strlen_delim(char* src, size_t len, char* delims, size_t delimc);
-size_t httpu_substr_delim(char** dst, char* src, size_t len, char* delims, size_t delimc);
-char* httpu_status_str(int status);
+ssize_t httpu_strlen_delim(const char* src, size_t len, const char* delims, size_t delimc);
+size_t httpu_substr_delim(char** dst, const char* src, size_t len, const char* delims, size_t delimc);
+const char* httpu_status_str(int status);
