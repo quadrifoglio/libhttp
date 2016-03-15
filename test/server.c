@@ -33,13 +33,7 @@ coroutine void client(int csfd) {
 	close(csfd);
 }
 
-void handleInt() {
-	puts("mdr");
-}
-
 int main(int argc, char** argv) {
-	//signal(SIGINT, handleInt);
-
 	int sockfd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if(!sockfd) {
 		perror("socket");

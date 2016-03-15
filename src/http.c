@@ -209,6 +209,8 @@ void http_header_add(http_headers_t* hh, char* name, char* value) {
 }
 
 void http_client(int sockfd, http_request_cb onRequest, http_error_cb onError) {
+	errno = 0;
+
 	while(true) {
 		http_request_t request = {0};
 		http_response_t response = {0};
@@ -264,9 +266,7 @@ void http_client(int sockfd, http_request_cb onRequest, http_error_cb onError) {
 		char* resStr = 0;
 		http_response_format(&response, &resStr);
 
-		//tcpsend(s, resStr, strlen(resStr), -1);
-		//tcpflush(s, -1);
-
+		send(sockfd, resStr, strlen(resStr), 0);
 		free(resStr);
 
 		http_response_dispose(&response);
