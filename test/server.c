@@ -28,7 +28,7 @@ void onError(http_request_t* request, http_response_t* response) {
 }
 
 coroutine void client(int csfd) {
-	http_client(csfd, &onRequest, &onError);
+	http_client_loop(csfd, &onRequest, &onError);
 	shutdown(csfd, SHUT_RDWR);
 	close(csfd);
 }

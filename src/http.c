@@ -208,7 +208,7 @@ void http_header_add(http_headers_t* hh, char* name, char* value) {
 	*(hh->values + i) = value;
 }
 
-void http_client(int sockfd, http_request_cb onRequest, http_error_cb onError) {
+void http_client_loop(int sockfd, http_request_cb onRequest, http_error_cb onError) {
 	errno = 0;
 
 	while(true) {

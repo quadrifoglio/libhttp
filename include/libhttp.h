@@ -51,10 +51,6 @@ typedef struct {
 typedef void (*http_request_cb)(http_request_t*, http_response_t*);
 typedef void (*http_error_cb)(http_request_t*, http_response_t*);
 
-typedef struct {
-	http_request_cb onRequest;
-} http_server_t;
-
 bool http_request_parse(http_request_t* req, const char* line);
 void http_request_dispose(http_request_t* req);
 
@@ -65,7 +61,7 @@ void http_response_dispose(http_response_t* res);
 bool http_header_parse(const char* line, char** name, char** value);
 void http_header_add(http_headers_t* hh, char* name, char* value);
 
-void http_client(int sockfd, http_request_cb, http_error_cb);
+void http_client_loop(int sockfd, http_request_cb, http_error_cb);
 
 // UTILS
 
