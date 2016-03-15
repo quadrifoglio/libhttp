@@ -6,24 +6,23 @@
 #include <errno.h>
 #include <libmill.h>
 
-bool http_get_line(tcpsock s, char** line) {
-	char* buf = malloc(HTTP_MAX_LINE_LENGTH);
-	size_t sz = tcprecvuntil(s, buf, HTTP_MAX_LINE_LENGTH, "\n", 1, now() + 1000);
+/**
+ * Returns NULL on error and sets `errno`.
+ */
+static char* http_get_line(tcpsock s) {
+	char* line = calloc(HTTP_MAX_LINE_LENGTH + 1, 1);
+	if(!*line) {
+		errno = ENOMEM;
+		return NULL;
+	}
+
+	tcprecvuntil(s, line, HTTP_MAX_LINE_LENGTH, "\n", 1, now() + 1000);
 
 	if(errno != 0) {
-		return false;
+		free(line);
+		return NULL;
 	}
-
-	*line = calloc(1, sz + 1);
-	if(!(*line)) {
-		errno = ENOMEM;
-		return false;
-	}
-
-	memcpy(*line, buf, sz);
-	free(buf);
-
-	return true;
+	return line;
 }
 
 bool http_request_parse(http_request_t* req, const char* line) {
@@ -58,38 +57,24 @@ bool http_request_parse(http_request_t* req, const char* line) {
 	req->uri = strdup(uri);
 
 exit:
-	if(method) {
-		free(method);
-	}
-	if(uri) {
-		free(uri);
-	}
-	if(proto) {
-		free(proto);
-	}
+	free(method);
+	free(uri);
+	free(proto);
 
 	return res;
 }
 
 void http_request_dispose(http_request_t* req) {
-	if(req->method) {
-		free(req->method);
-	}
-	if(req->uri) {
-		free(req->uri);
-	}
+	free(req->method);
+	free(req->uri);
 
 	for(size_t i = 0; i < req->headers.count; ++i) {
-		free(*(req->headers.names + i));
-		free(*(req->headers.values + i));
+		free(req->headers.names[i]);
+		free(req->headers.values[i]);
 	}
 
-	if(req->headers.names) {
-		free(req->headers.names);
-	}
-	if(req->headers.values) {
-		free(req->headers.values);
-	}
+	free(req->headers.names);
+	free(req->headers.values);
 }
 
 void http_response_init(http_response_t* res, int status) {
@@ -174,12 +159,8 @@ void http_response_dispose(http_response_t* res) {
 		free(*(res->headers.values + i));
 	}
 
-	if(res->headers.names) {
-		free(res->headers.names);
-	}
-	if(res->headers.values) {
-		free(res->headers.values);
-	}
+	free(res->headers.names);
+	free(res->headers.values);
 }
 
 bool http_header_parse(const char* line, char** name, char** value) {
@@ -235,8 +216,8 @@ coroutine void client(http_server_t serv, tcpsock s) {
 		http_response_init(&response, 200);
 
 		// Parsing request's first line
-		char* line = 0;
-		if(!http_get_line(s, &line) || !line) {
+		char* line = http_get_line(s);
+		if(!line) {
 			// TODO: Report error
 			break;
 		}
@@ -249,7 +230,7 @@ coroutine void client(http_server_t serv, tcpsock s) {
 		free(line);
 
 		// Start parsing headers
-		http_get_line(s, &line);
+		line = http_get_line(s);
 		while(line && strcmp(line, "\r\n")) {
 			char* name;
 			char* value;
@@ -258,13 +239,10 @@ coroutine void client(http_server_t serv, tcpsock s) {
 				http_header_add(&request.headers, name, value);
 
 				free(line);
-				http_get_line(s, &line);
+				line = http_get_line(s);
 			}
 		}
-
-		if(line) {
-			free(line);
-		}
+		free(line);
 
 		if(serv.onRequest) {
 			serv.onRequest(&request, &response);
