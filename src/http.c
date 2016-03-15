@@ -4,24 +4,24 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include <libmill.h>
+#include <sys/socket.h>
 
 /**
  * Returns NULL on error and sets `errno`.
  */
-static char* http_get_line(tcpsock s) {
+static char* http_get_line(int sockfd) {
 	char* line = calloc(HTTP_MAX_LINE_LENGTH + 1, 1);
-	if(!*line) {
+	if(!line) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
-	tcprecvuntil(s, line, HTTP_MAX_LINE_LENGTH, "\n", 1, now() + 1000);
-
+	httpu_recv_until(sockfd, line, HTTP_MAX_LINE_LENGTH, "\n", 1);
 	if(errno != 0) {
 		free(line);
 		return NULL;
 	}
+
 	return line;
 }
 
@@ -208,7 +208,7 @@ void http_header_add(http_headers_t* hh, char* name, char* value) {
 	*(hh->values + i) = value;
 }
 
-coroutine void client(http_server_t serv, tcpsock s) {
+void http_client(int sockfd, http_request_cb onRequest, http_error_cb onError) {
 	while(true) {
 		http_request_t request = {0};
 		http_response_t response = {0};
@@ -216,21 +216,30 @@ coroutine void client(http_server_t serv, tcpsock s) {
 		http_response_init(&response, 200);
 
 		// Parsing request's first line
-		char* line = http_get_line(s);
+		char* line = http_get_line(sockfd);
 		if(!line) {
-			// TODO: Report error
+			if(errno == ECONNRESET) {
+				return;
+			}
+			else if(onError) {
+				onError(&request, &response);
+			}
+
 			break;
 		}
 
 		if(!http_request_parse(&request, line)) {
-			// TODO: Report error
+			if(onError && errno != ECONNRESET) {
+				onError(&request, &response);
+			}
+
 			break;
 		}
 
 		free(line);
 
 		// Start parsing headers
-		line = http_get_line(s);
+		line = http_get_line(sockfd);
 		while(line && strcmp(line, "\r\n")) {
 			char* name;
 			char* value;
@@ -239,20 +248,24 @@ coroutine void client(http_server_t serv, tcpsock s) {
 				http_header_add(&request.headers, name, value);
 
 				free(line);
-				line = http_get_line(s);
+				line = http_get_line(sockfd);
 			}
 		}
 		free(line);
 
-		if(serv.onRequest) {
-			serv.onRequest(&request, &response);
+		if(errno == ECONNRESET) {
+			return;
+		}
+
+		if(onRequest) {
+			onRequest(&request, &response);
 		}
 
 		char* resStr = 0;
 		http_response_format(&response, &resStr);
 
-		tcpsend(s, resStr, strlen(resStr), -1);
-		tcpflush(s, -1);
+		//tcpsend(s, resStr, strlen(resStr), -1);
+		//tcpflush(s, -1);
 
 		free(resStr);
 
@@ -261,31 +274,42 @@ coroutine void client(http_server_t serv, tcpsock s) {
 	}
 }
 
-bool http_listen(http_server_t serv, const char* addrs, int port, int backlog) {
-	ipaddr addr = iplocal(addrs, port, 0);
-	if(errno != 0) {
-		return false;
-	}
-
-	tcpsock tcp = tcplisten(addr, backlog);
-	if(errno != 0) {
-		return false;
-	}
-
-	while(true) {
-		tcpsock s = tcpaccept(tcp, -1);
-		if(!s || errno != 0) {
-			continue;
-		}
-
-		go(client(serv, s));
-	}
-
-	return true;
-}
-
 // UTILS
 
+/*
+ * Read bytes from the socket until either the buffer is full or one of
+ * the specified delimiter characters is encountered
+ */
+size_t httpu_recv_until(int fd, void *buf, size_t len, const char *delims, size_t delimc) {
+	char *pos = (char*)buf;
+
+	for(size_t i = 0; i != len; ++i, ++pos) {
+		ssize_t res = recv(fd, pos, 1, MSG_WAITALL);
+
+		if(res == 1) {
+			for(size_t j = 0; j != delimc; ++j) {
+				if(*pos == delims[j]) {
+					return i + 1;
+				}
+			}
+		}
+		else if(res == 0) {
+			errno = ECONNRESET;
+		}
+
+		if(errno != 0) {
+			return i + res;
+		}
+	}
+
+	errno = ENOBUFS;
+	return len;
+}
+
+/*
+ * Calculate the specified string's size until one of the specified
+ * delimiter characters is encountered
+ */
 ssize_t httpu_strlen_delim(const char* src, size_t len, const char* delims, size_t delimc) {
 	ssize_t i = 0;
 	while(i < (ssize_t)len) {
@@ -306,6 +330,10 @@ endloop:
 	return i;
 }
 
+/*
+ * Get a substring from the specified string, stopping when one of the delimiter
+ * characters is encountered
+ */
 size_t httpu_substr_delim(char** dst, const char* src, size_t len, const char* delims, size_t delimc) {
 	// TODO: Don't allocate that much memory
 	*dst = malloc(len);
@@ -335,6 +363,9 @@ endloop:
 	return i;
 }
 
+/*
+ * Get the HTTP response message based on a status code
+ */
 const char* httpu_status_str(int status) {
 	switch(status) {
 		case 100:

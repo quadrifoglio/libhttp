@@ -2,7 +2,6 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-#include <libmill.h>
 
 #define false 0
 #define true 1
@@ -49,7 +48,8 @@ typedef struct {
 	size_t bodylen;
 } http_response_t;
 
-typedef void(*http_request_cb)(http_request_t*, http_response_t*);
+typedef void (*http_request_cb)(http_request_t*, http_response_t*);
+typedef void (*http_error_cb)(http_request_t*, http_response_t*);
 
 typedef struct {
 	http_request_cb onRequest;
@@ -65,10 +65,11 @@ void http_response_dispose(http_response_t* res);
 bool http_header_parse(const char* line, char** name, char** value);
 void http_header_add(http_headers_t* hh, char* name, char* value);
 
-bool http_listen(http_server_t, const char* addr, int port, int backlog);
+void http_client(int sockfd, http_request_cb, http_error_cb);
 
 // UTILS
 
+size_t httpu_recv_until(int fd, void *buf, size_t len, const char *delims, size_t delimc);
 ssize_t httpu_strlen_delim(const char* src, size_t len, const char* delims, size_t delimc);
 size_t httpu_substr_delim(char** dst, const char* src, size_t len, const char* delims, size_t delimc);
 const char* httpu_status_str(int status);
