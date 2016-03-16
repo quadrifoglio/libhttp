@@ -1,12 +1,8 @@
 # libhttp
 
-Basic HTTP server library for the C programming language
+Basic HTTP library for the C programming language
 
 Work in progress !
-
-## Dependencies
-
-This project relies on [libmill](https://github.com/sustrik/libmill) to provide concurrency functionality
 
 ## Installation
 

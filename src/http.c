@@ -75,6 +75,10 @@ void http_request_dispose(http_request_t* req) {
 
 	free(req->headers.names);
 	free(req->headers.values);
+
+	if(req->body.len > 0) {
+		free(req->body.data);
+	}
 }
 
 void http_response_init(http_response_t* res, int status) {
@@ -86,8 +90,8 @@ void http_response_init(http_response_t* res, int status) {
 	res->headers.names = 0;
 	res->headers.values = 0;
 
-	res->body = 0;
-	res->bodylen = 0;
+	res->body.data = 0;
+	res->body.len = 0;
 }
 
 void http_response_format(http_response_t* res, char** buf) {
@@ -141,12 +145,12 @@ void http_response_format(http_response_t* res, char** buf) {
 	const char* ends = "\r\n";
 	strcat(str, ends);
 
-	if(res->body && res->bodylen > 0) {
-		char* body = malloc(res->bodylen + 1);
-		memcpy(body, res->body, res->bodylen);
-		body[res->bodylen] = 0;
+	if(res->body.data && res->body.len > 0) {
+		char* body = malloc(res->body.len + 1);
+		memcpy(body, res->body.data, res->body.len);
+		body[res->body.len] = 0;
 
-		str = realloc(str, strlen(str) + res->bodylen + 1);
+		str = realloc(str, strlen(str) + res->body.len + 1);
 		strcat(str, body);
 		free(body);
 	}
@@ -162,6 +166,10 @@ void http_response_dispose(http_response_t* res) {
 
 	free(res->headers.names);
 	free(res->headers.values);
+
+	if(res->body.len > 0) {
+		free(res->body.data);
+	}
 }
 
 bool http_header_parse(const char* line, char** name, char** value) {
@@ -211,6 +219,16 @@ void http_header_add(http_headers_t* hh, char* name, char* value) {
 	*(hh->values + i) = value;
 }
 
+char* http_header_get(http_headers_t* h, const char* name) {
+	for(size_t i = 0; i < h->count; ++i) {
+		if(strcmp(h->names[i], name) == 0) {
+			return h->values[i];
+		}
+	}
+
+	return 0;
+}
+
 void http_client_loop(int sockfd, http_request_cb onRequest, http_error_cb onError) {
 	errno = 0;
 
@@ -246,7 +264,7 @@ void http_client_loop(int sockfd, http_request_cb onRequest, http_error_cb onErr
 
 		// Start parsing headers
 		line = http_get_line(sockfd);
-		while(line && strcmp(line, "\r\n")) {
+		while(line && strcmp(line, "\r\n") != 0) {
 			char* name;
 			char* value;
 
@@ -264,8 +282,41 @@ void http_client_loop(int sockfd, http_request_cb onRequest, http_error_cb onErr
 			return;
 		}
 
+		char* hv = http_header_get(&request.headers, "Transfer-Encoding");
+		if(hv && strcmp(hv, "chunked") == 0) {
+			response.body.chunked = true;
+
+			while(true) {
+				char* line = http_get_line(sockfd);
+				if(strcmp(line, "0\r\n") == 0) {
+					puts("end");
+					return;
+				}
+
+				size_t sz = httpu_strlen_delim(line, strlen(line), "\n", 1);
+				if(sz <= 1) {
+					// TODO: Handle error
+					return;
+				}
+
+				if(line[sz] != '\n' || line[sz - 1] != '\r') {
+					// TODO: Handle error
+					puts("Invalid \\r\\n");
+					return;
+				}
+
+				line[sz - 1] = 0;
+				size_t s = strtol(line, NULL, 16);
+				free(line);
+
+				void* buf = malloc(s);
+				size_t rs = recv(sockfd, buf, s, 0);
+				free(buf);
+			}
+		}
+
 		if(onRequest) {
-			onRequest(&request, &response);
+			onRequest(sockfd, &request, &response);
 		}
 
 		char* resStr = 0;

@@ -30,25 +30,32 @@ typedef struct {
 } http_headers_t;
 
 typedef struct {
+	bool chunked;
+
+	void* data;
+	size_t len;
+} http_body_t;
+
+typedef struct {
 	int vmaj, vmin;
 
 	char* method;
 	char* uri;
 
 	http_headers_t headers;
+	http_body_t body;
 } http_request_t;
 
 typedef struct {
 	int vmaj, vmin;
 
 	int status;
-	http_headers_t headers;
 
-	u8* body;
-	size_t bodylen;
+	http_headers_t headers;
+	http_body_t body;
 } http_response_t;
 
-typedef void (*http_request_cb)(http_request_t*, http_response_t*);
+typedef void (*http_request_cb)(int, http_request_t*, http_response_t*);
 typedef void (*http_error_cb)(http_request_t*, http_response_t*);
 
 bool http_request_parse(http_request_t* req, const char* line);
@@ -60,6 +67,7 @@ void http_response_dispose(http_response_t* res);
 
 bool http_header_parse(const char* line, char** name, char** value);
 void http_header_add(http_headers_t* hh, char* name, char* value);
+char* http_header_get(http_headers_t* h, const char* name);
 
 void http_client_loop(int sockfd, http_request_cb, http_error_cb);
 

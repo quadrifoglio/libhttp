@@ -10,17 +10,12 @@
 
 static volatile bool running = true;
 
-void onRequest(http_request_t* request, http_response_t* response) {
+void onRequest(int socket, http_request_t* request, http_response_t* response) {
 	printf("HTTP/%d.%d %s request to %s\n", request->vmaj, request->vmin, request->method, request->uri);
 
 	for(size_t i = 0; i < request->headers.count; ++i) {
 		printf("%s: %s\n", request->headers.names[i], request->headers.values[i]);
 	}
-
-	// TODO: Remove the need to allocate header names and values
-	http_header_add(&response->headers, strdup("Content-Length"), strdup("13"));
-	response->body = (u8*)"Hello world !";
-	response->bodylen = 13;
 }
 
 void onError(http_request_t* request, http_response_t* response) {
@@ -33,7 +28,13 @@ coroutine void client(int csfd) {
 	close(csfd);
 }
 
+void sigint() {
+	exit(0);
+}
+
 int main(int argc, char** argv) {
+	signal(SIGINT, sigint);
+
 	int sockfd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if(sockfd == -1) {
 		perror("socket");
@@ -44,6 +45,8 @@ int main(int argc, char** argv) {
 	sa.sin_family = AF_INET;
 	sa.sin_port = htons(8000);
 	sa.sin_addr.s_addr = htonl(INADDR_ANY);
+
+	setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, 0, 0);
 
 	if(bind(sockfd, (struct sockaddr *)&sa, sizeof(sa)) != 0) {
 		perror("bind");
