@@ -35,7 +35,7 @@ coroutine void client(int csfd) {
 
 int main(int argc, char** argv) {
 	int sockfd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if(!sockfd) {
+	if(sockfd == -1) {
 		perror("socket");
 		return 1;
 	}
@@ -57,7 +57,7 @@ int main(int argc, char** argv) {
 
 	while(running) {
 		int csfd = accept(sockfd, 0, 0);
-		if(!csfd) {
+		if(csfd == -1) {
 			perror("accept");
 			continue;
 		}

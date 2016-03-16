@@ -137,7 +137,8 @@ void http_response_format(http_response_t* res, char** buf) {
 		free(headerb);
 	}
 
-	char* ends = "\r\n";
+	str = realloc(str, strlen(str) + 3);
+	const char* ends = "\r\n";
 	strcat(str, ends);
 
 	if(res->body && res->bodylen > 0) {
@@ -169,15 +170,15 @@ bool http_header_parse(const char* line, char** name, char** value) {
 		return false;
 	}
 
-	*name = malloc(n); // Header name must be less than 256 chars long
-	*value = 0;
+	// Header name must be less than 256 chars long
+	size_t szn = httpu_substr_delim(name, line, n + 1, ":", 1);
 	if(!(*name)) {
 		errno = ENOMEM;
 		return false;
 	}
 
-	size_t szn = httpu_substr_delim(name, line, n + 1, ":", 1);
 	if(szn == 0 || szn >= (size_t)n + 1) {
+		free(*name);
 		return false;
 	}
 
@@ -185,11 +186,13 @@ bool http_header_parse(const char* line, char** name, char** value) {
 	size_t len = strlen(line);
 
 	if(len <= 0) {
+		free(*name);
 		return false;
 	}
 
 	*value = calloc(1, len - 1);
 	if(!(*value)) {
+		free(*name);
 		errno = ENOMEM;
 		return false;
 	}
@@ -231,6 +234,7 @@ void http_client_loop(int sockfd, http_request_cb onRequest, http_error_cb onErr
 		}
 
 		if(!http_request_parse(&request, line)) {
+			free(line);
 			if(onError && errno != ECONNRESET) {
 				onError(&request, &response);
 			}
@@ -256,6 +260,7 @@ void http_client_loop(int sockfd, http_request_cb onRequest, http_error_cb onErr
 		free(line);
 
 		if(errno == ECONNRESET) {
+			http_request_dispose(&request);
 			return;
 		}
 
