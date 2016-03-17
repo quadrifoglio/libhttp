@@ -55,7 +55,7 @@ typedef struct {
 	http_body_t body;
 } http_response_t;
 
-typedef void (*http_request_cb)(int, http_request_t*, http_response_t*);
+typedef void (*http_request_cb)(http_request_t*, http_response_t*);
 typedef void (*http_error_cb)(http_request_t*, http_response_t*);
 
 bool http_request_parse(http_request_t* req, const char* line);

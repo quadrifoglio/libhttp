@@ -10,12 +10,10 @@
 
 static volatile bool running = true;
 
-void onRequest(int socket, http_request_t* request, http_response_t* response) {
-	printf("HTTP/%d.%d %s request to %s\n", request->vmaj, request->vmin, request->method, request->uri);
-
-	for(size_t i = 0; i < request->headers.count; ++i) {
-		printf("%s: %s\n", request->headers.names[i], request->headers.values[i]);
-	}
+void onRequest(http_request_t* request, http_response_t* response) {
+	http_header_add(&response->headers, strdup("Content-Length"), strdup("13"));
+	response->body.len = 13;
+	response->body.data = (void*)strdup("Hello world !");
 }
 
 void onError(http_request_t* request, http_response_t* response) {
@@ -34,6 +32,11 @@ void sigint() {
 
 int main(int argc, char** argv) {
 	signal(SIGINT, sigint);
+
+	int nproc = 1;
+	if(argc > 1) {
+		nproc = atoi(argv[1]);
+	}
 
 	int sockfd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if(sockfd == -1) {
@@ -56,6 +59,17 @@ int main(int argc, char** argv) {
 	if(listen(sockfd, 1) != 0) {
 		perror("listen");
 		return 1;
+	}
+
+	for (int i = 0; i < nproc - 1; ++i) {
+		pid_t pid = mfork();
+		if(pid < 0) {
+			perror("fork");
+			return 1;
+		}
+		if(pid == 0) {
+			break;
+		}
 	}
 
 	while(running) {

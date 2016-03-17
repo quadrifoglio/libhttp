@@ -232,7 +232,8 @@ char* http_header_get(http_headers_t* h, const char* name) {
 void http_client_loop(int sockfd, http_request_cb onRequest, http_error_cb onError) {
 	errno = 0;
 
-	while(true) {
+	bool close = false;
+	while(!close) {
 		http_request_t request = {0};
 		http_response_t response = {0};
 
@@ -316,7 +317,7 @@ void http_client_loop(int sockfd, http_request_cb onRequest, http_error_cb onErr
 		}
 
 		if(onRequest) {
-			onRequest(sockfd, &request, &response);
+			onRequest(&request, &response);
 		}
 
 		char* resStr = 0;
@@ -324,6 +325,14 @@ void http_client_loop(int sockfd, http_request_cb onRequest, http_error_cb onErr
 
 		send(sockfd, resStr, strlen(resStr), 0);
 		free(resStr);
+
+		hv = http_header_get(&request.headers, "Connection");
+		if(hv && strcmp(hv, "keep-alive") == 0) {
+			close = false;
+		}
+		else {
+			close = true;
+		}
 
 		http_response_dispose(&response);
 		http_request_dispose(&request);
