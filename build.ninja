@@ -1,5 +1,5 @@
 cc = gcc
-cflags = -Iinclude -std=gnu99 -g $
+cflags = -I. -std=gnu99 -g $
     -W -Wall -Wextra -Wno-missing-field-initializers
 
 rule cc
@@ -10,7 +10,7 @@ rule ld
   command = $cc $in -o $out -lmill
   description = LD $in
 
-build build/http.o: cc src/http.c
+build build/http.o: cc http.c
 
 build build/libtest.o: cc test/libtest.c
 build build/libtest: ld build/libtest.o build/http.o
