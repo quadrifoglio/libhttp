@@ -1,4 +1,4 @@
-cc = gcc
+cc = clang
 cflags = -I. -std=gnu99 -g $
     -W -Wall -Wextra -Wno-missing-field-initializers
 

@@ -1,4 +1,4 @@
-#include "libhttp.h"
+#include "http.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -29,6 +29,9 @@ bool http_request_parse(http_request_t* req, const char* line) {
 	bool res = false;
 
 	char* method = 0;
+	char* uri = 0;
+	char* proto = 0;
+
 	size_t szm = httpu_substr_delim(&method, line, 10, " ", 1); // HTTP method must be less than 10 chars long
 	if(szm == 0 || szm >= 10) {
 		goto exit;
@@ -36,15 +39,12 @@ bool http_request_parse(http_request_t* req, const char* line) {
 
 	line += szm + 1;
 
-	char* uri = 0;
 	size_t szu = httpu_substr_delim(&uri, line, 2048, " ", 1); // HTTP URI must be less than 2048 chars long
 	if(szu == 0 || szu >= 2048) {
 		goto exit;
 	}
 
 	line += szu + 1;
-
-	char* proto = 0;
 	size_t szp = httpu_substr_delim(&proto, line, 8 + 1, "\r\n", 2);
 	if(szp != 8) {
 		goto exit;
@@ -311,7 +311,7 @@ void http_client_loop(int sockfd, http_request_cb onRequest, http_error_cb onErr
 				free(line);
 
 				void* buf = malloc(s);
-				size_t rs = recv(sockfd, buf, s, 0);
+				recv(sockfd, buf, s, 0);
 				free(buf);
 			}
 		}

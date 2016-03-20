@@ -1,4 +1,4 @@
-#include "libhttp.h"
+#include "http.h"
 
 #include <stdio.h>
 #include <string.h>
