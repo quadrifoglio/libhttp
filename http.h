@@ -24,6 +24,11 @@ typedef _Bool bool;
 
 typedef struct {
 	size_t count;
+	char** parts;
+} http_path_t;
+
+typedef struct {
+	size_t count;
 
 	char** names;
 	char** values;
@@ -58,22 +63,25 @@ typedef struct {
 typedef void (*http_request_cb)(http_request_t*, http_response_t*);
 typedef void (*http_error_cb)(http_request_t*, http_response_t*);
 
-bool http_request_parse(http_request_t* req, const char* line);
-void http_request_dispose(http_request_t* req);
+bool        http_request_parse(http_request_t* req, const char* line);
+void        http_request_dispose(http_request_t* req);
 
-void http_response_init(http_response_t* res, int status);
-void http_response_format(http_response_t* res, char** buf);
-void http_response_dispose(http_response_t* res);
+void        http_response_init(http_response_t* res, int status);
+void        http_response_format(http_response_t* res, char** buf);
+void        http_response_dispose(http_response_t* res);
 
-bool http_header_parse(const char* line, char** name, char** value);
-void http_header_add(http_headers_t* hh, char* name, char* value);
-char* http_header_get(http_headers_t* h, const char* name);
+bool        http_header_parse(const char* line, char** name, char** value);
+void        http_header_add(http_headers_t* hh, char* name, char* value);
+char*       http_header_get(http_headers_t* h, const char* name);
 
-void http_client_loop(int sockfd, http_request_cb, http_error_cb);
+http_path_t http_path_parse(const char* path);
+void        http_path_dispose(http_path_t* path);
+
+void        http_client_loop(int sockfd, http_request_cb, http_error_cb);
 
 // UTILS
 
-size_t httpu_recv_until(int fd, void *buf, size_t len, const char *delims, size_t delimc);
-ssize_t httpu_strlen_delim(const char* src, size_t len, const char* delims, size_t delimc);
-size_t httpu_substr_delim(char** dst, const char* src, size_t len, const char* delims, size_t delimc);
+size_t      httpu_recv_until(int fd, void *buf, size_t len, const char *delims, size_t delimc);
+ssize_t     httpu_strlen_delim(const char* src, size_t len, const char* delims, size_t delimc);
+size_t      httpu_substr_delim(char** dst, const char* src, size_t len, const char* delims, size_t delimc);
 const char* httpu_status_str(int status);

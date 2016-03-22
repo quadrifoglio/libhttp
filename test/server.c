@@ -11,6 +11,15 @@
 static volatile bool running = true;
 
 void onRequest(http_request_t* request, http_response_t* response) {
+	http_path_t path = http_path_parse(request->uri);
+
+	for(size_t i = 0; i < path.count; ++i) {
+		printf("/%s", path.parts[i]);
+	}
+
+	printf("\n");
+	http_path_dispose(&path);
+
 	http_header_add(&response->headers, strdup("Content-Length"), strdup("13"));
 	response->body.len = 13;
 	response->body.data = (void*)strdup("Hello world !");

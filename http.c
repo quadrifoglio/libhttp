@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/types.h>
 #include <sys/socket.h>
 
 /**
@@ -227,6 +228,38 @@ char* http_header_get(http_headers_t* h, const char* name) {
 	}
 
 	return 0;
+}
+
+http_path_t http_path_parse(const char* path) {
+	http_path_t p = {0};
+
+	if(*path != '/') {
+		return p;
+	}
+
+	char* u = strdup(path);
+	++u;
+
+	int i = 0;
+	char* tok = strtok(u, "/");
+	while(tok) {
+		p.parts = realloc(p.parts, (++p.count) * sizeof(char**));
+		p.parts[i] = strdup(tok);
+
+		tok = strtok(0, "/");
+		++i;
+	}
+
+	free(u - 1);
+	return p;
+}
+
+void http_path_dispose(http_path_t* path) {
+	for(size_t i = 0; i < path->count; ++i) {
+		free(path->parts[i]);
+	}
+
+	free(path->parts);
 }
 
 void http_client_loop(int sockfd, http_request_cb onRequest, http_error_cb onError) {
