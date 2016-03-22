@@ -240,6 +240,12 @@ http_path_t http_path_parse(const char* path) {
 	char* u = strdup(path);
 	++u;
 
+	// Stop parsing when the ? character is encountered
+	ssize_t l = httpu_strlen_delim(u, strlen(u), "?", 1);
+	if(l != -1) {
+		u[l] = 0;
+	}
+
 	int i = 0;
 	char* tok = strtok(u, "/");
 	while(tok) {
