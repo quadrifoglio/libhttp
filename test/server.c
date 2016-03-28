@@ -17,7 +17,10 @@ void onRequest(http_request_t* request, http_response_t* response) {
 		printf("/%s", path.parts[i]);
 	}
 
-	printf("\n");
+	if(path.count > 0) {
+		printf("\n");
+	}
+
 	http_path_dispose(&path);
 
 	http_header_add(&response->headers, strdup("Content-Length"), strdup("13"));

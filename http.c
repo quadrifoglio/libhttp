@@ -329,7 +329,6 @@ void http_client_loop(int sockfd, http_request_cb onRequest, http_error_cb onErr
 			while(true) {
 				char* line = http_get_line(sockfd);
 				if(strcmp(line, "0\r\n") == 0) {
-					puts("end");
 					return;
 				}
 
@@ -355,8 +354,29 @@ void http_client_loop(int sockfd, http_request_cb onRequest, http_error_cb onErr
 			}
 		}
 
+		hv = http_header_get(&request.headers, "Content-Length");
+		if(hv) {
+			int sz = atoi(hv);
+			request.body.len = sz;
+			request.body.data = malloc(sz);
+
+			recv(sockfd, request.body.data, sz, 0);
+			if(errno == ECONNRESET) {
+				http_request_dispose(&request);
+				return;
+			}
+		}
+
 		if(onRequest) {
 			onRequest(&request, &response);
+		}
+
+		hv = http_header_get(&response.headers, "Content-Length");
+		if(!hv && response.body.len > 0) {
+			char sc[50];
+			sprintf(sc, "%zu", response.body.len);
+
+			http_header_add(&response.headers, strdup("Content-Length"), strdup(sc));
 		}
 
 		char* resStr = 0;
