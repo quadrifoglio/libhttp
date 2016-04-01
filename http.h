@@ -6,7 +6,8 @@
 #define false 0
 #define true 1
 
-#define HTTP_MAX_LINE_LENGTH 8000
+#define HTTP_MAX_LINE_LENGTH  8000
+#define HTTP_MAX_REQUEST_SIZE 100000000 // 100MB
 
 typedef uint8_t u8;
 typedef uint16_t u16;

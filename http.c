@@ -357,6 +357,11 @@ void http_client_loop(int sockfd, http_request_cb onRequest, http_error_cb onErr
 		hv = http_header_get(&request.headers, "Content-Length");
 		if(hv) {
 			int sz = atoi(hv);
+			if(sz > HTTP_MAX_REQUEST_SIZE) {
+				// TODO: Handle error
+				return;		
+			}
+
 			request.body.len = sz;
 			request.body.data = malloc(sz);
 
