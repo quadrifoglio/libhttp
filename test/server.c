@@ -10,30 +10,32 @@
 
 static volatile bool running = true;
 
-void onRequest(http_request_t* request, http_response_t* response) {
+void request(http_request_t* request, http_response_t* response) {
 	http_path_t path = http_path_parse(request->uri);
+
+	printf("%s ", request->method);
 
 	for(size_t i = 0; i < path.count; ++i) {
 		printf("/%s", path.parts[i]);
 	}
 
-	if(path.count > 0) {
-		printf("\n");
+	if(path.count == 0) {
+		printf("/");
 	}
 
+	printf("\n");
 	http_path_dispose(&path);
 
-	http_header_add(&response->headers, strdup("Content-Length"), strdup("13"));
-	response->body.len = 13;
-	response->body.data = (void*)strdup("Hello world !");
+	http_body_append(&response->body, "Hello ", 6);
+	http_body_append(&response->body, "World !", 7);
 }
 
-void onError(http_request_t* request, http_response_t* response) {
-	perror("http");
+void error(http_error_t err, int sockfd) {
+	printf("HTTP error: %s\n", http_error_str(err));
 }
 
 coroutine void client(int csfd) {
-	http_client_loop(csfd, &onRequest, &onError);
+	http_client_loop(csfd, request, error);
 	shutdown(csfd, SHUT_RDWR);
 	close(csfd);
 }
@@ -61,7 +63,7 @@ int main(int argc, char** argv) {
 	sa.sin_port = htons(8000);
 	sa.sin_addr.s_addr = htonl(INADDR_ANY);
 
-	setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, 0, 0);
+	setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
 
 	if(bind(sockfd, (struct sockaddr *)&sa, sizeof(sa)) != 0) {
 		perror("bind");
