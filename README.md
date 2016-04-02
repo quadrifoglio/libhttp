@@ -11,16 +11,29 @@ Just copy include/libhttp.h and src/http.c into your project.
 ## Usage
 
 ```c
-void onRequest(http_request_t* request, http_response_t* response) {
-	printf("HTTP/%d.%d %s request to %s\n", request->vmaj, request->vmin, request->method, request->uri);
+// Print something like "GET /test/test.html" to stdout
+// And respond "Hello World !"
+void request(http_request_t* request, http_response_t* response) {
+	http_path_t path = http_path_parse(request->uri);
 
-	for(size_t i = 0; i < request->headers.count; ++i) {
-		printf("%s: %s\n", request->headers.names[i], request->headers.values[i]);
+	for(size_t i = 0; i < path.count; ++i) {
+		printf("/%s", path.parts[i]);
 	}
+
+	if(path.count == 0) {
+		printf("/");
+	}
+
+	printf("\n");
+	http_path_dispose(&path);
+
+	http_body_append(&response->body, "Hello ", 6);
+	http_body_append(&response->body, "World !", 7);
 }
 
-void onError(http_request_t* request, http_response_t* response) {
-	// Not usable yet
+// Log libhttp's errors
+void error(http_error_t err, int sockfd) {
+	printf("HTTP error: %s\n", http_error_str(err));
 }
 
 int main(int argc, char** argv) {
@@ -30,8 +43,8 @@ int main(int argc, char** argv) {
 	int cfd = accept(sockfd, 0, 0);
 	// Accepting the incomming connection...
 
-	http_client_loop(cfd, &onRequest, &onError); // Process the HTTP requests from that TCP connection
-	// The http_client function also sends the HTTP response (modifiable inside onRequest)
+	http_client_loop(cfd, request, error); // Process the HTTP requests from that TCP connection
+	// The http_client_loop function sends the HTTP response (modifiable inside the 'request' callback)
 
 	shutdown(cfd);
 	close(cfd);
